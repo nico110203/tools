@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Artefacts Claude</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Mes Artefacts</h1>
+        <p class="subtitle">Collection personnelle de créations Claude</p>
+    </header>
+
+    <main id="gallery">
+        <!-- Les cartes sont générées automatiquement depuis artefacts.json -->
+        <p class="loading">Chargement...</p>
+    </main>
+
+    <footer>
+        <p>Propulsé par Claude &middot; Hébergé sur GitHub Pages</p>
+    </footer>
+
+    <script>
+        async function loadArtefacts() {
+            const gallery = document.getElementById('gallery');
+            try {
+                const res = await fetch('artefacts.json');
+                const artefacts = await res.json();
+
+                if (artefacts.length === 0) {
+                    gallery.innerHTML = '<p class="empty">Aucun artefact pour le moment. Ajoute ton premier !</p>';
+                    return;
+                }
+
+                // Trier par date décroissante
+                artefacts.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                gallery.innerHTML = artefacts.map(a => `
+                    <a href="artefacts/${a.fichier}" class="card">
+                        <span class="card-tag">${a.tag || 'artefact'}</span>
+                        <h2>${a.titre}</h2>
+                        <p>${a.description || ''}</p>
+                        <time>${new Date(a.date).toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' })}</time>
+                    </a>
+                `).join('');
+            } catch (e) {
+                gallery.innerHTML = '<p class="empty">Impossible de charger artefacts.json</p>';
+                console.error(e);
+            }
+        }
+
+        loadArtefacts();
+    </script>
+</body>
+</html>

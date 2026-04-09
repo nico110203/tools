@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculatrice de pourboire</title>
+    <style>
+        body {
+            font-family: -apple-system, sans-serif;
+            background: #f4f1eb;
+            color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2.5rem;
+            max-width: 360px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+        h1 { font-size: 1.4rem; margin-bottom: 1.5rem; }
+        label { display: block; font-size: 0.85rem; color: #6b6560; margin-bottom: 0.3rem; }
+        input, select {
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid #e2ddd6;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            background: #faf8f5;
+        }
+        .result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #fdf5f2;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #c45d3e;
+        }
+        .back {
+            display: inline-block;
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: #6b6560;
+            text-decoration: none;
+        }
+        .back:hover { color: #c45d3e; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculatrice de pourboire</h1>
+        <label for="montant">Montant de l'addition</label>
+        <input type="number" id="montant" placeholder="ex: 45.00" oninput="calc()">
+        <label for="pourcent">Pourboire (%)</label>
+        <select id="pourcent" onchange="calc()">
+            <option value="10">10%</option>
+            <option value="15" selected>15%</option>
+            <option value="20">20%</option>
+            <option value="25">25%</option>
+        </select>
+        <div class="result" id="result">0.00 &euro;</div>
+        <a href="../index.html" class="back">&larr; Retour à la galerie</a>
+    </div>
+    <script>
+        function calc() {
+            const m = parseFloat(document.getElementById('montant').value) || 0;
+            const p = parseInt(document.getElementById('pourcent').value);
+            const total = m + (m * p / 100);
+            document.getElementById('result').textContent = total.toFixed(2) + ' €';
+        }
+    </script>
+</body>
+</html>
