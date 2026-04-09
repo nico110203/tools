@@ -1,14 +1,7 @@
 [
-    {
-        "titre": "Calculatrice de pourboire",
-        "description": "Petit outil pour calculer le pourboire au restaurant.",
-        "fichier": "calculatrice-pourboire.html",
-        "tag": "outil",
-        "date": "2026-04-08"
-    },
+
     {
     "titre": "PDF to MarkDown",
-    "description": "Courte description.",
     "fichier": "pdf-to-markdown.html",
     "tag": "react",
     "date": "2026-04-09"
