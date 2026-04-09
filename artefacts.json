@@ -1,12 +1,5 @@
 [
     {
-        "titre": "Dashboard Budget",
-        "description": "Un tableau de bord interactif pour suivre mes dépenses mensuelles.",
-        "fichier": "dashboard-budget.html",
-        "tag": "react",
-        "date": "2026-04-09"
-    },
-    {
         "titre": "Calculatrice de pourboire",
         "description": "Petit outil pour calculer le pourboire au restaurant.",
         "fichier": "calculatrice-pourboire.html",
