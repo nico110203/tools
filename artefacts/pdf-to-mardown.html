@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF → Markdown</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: #e0e0e0;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 720px; margin: 0 auto; }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #a78bfa, #818cf8, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+
+    .subtitle {
+      color: #9ca3af;
+      margin-top: 8px;
+      font-size: 14px;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .dropzone {
+      border: 2px dashed #4b5563;
+      border-radius: 16px;
+      padding: 60px 30px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .dropzone.over {
+      border-color: #818cf8;
+      background: rgba(129,140,248,0.08);
+    }
+
+    .dropzone-icon { font-size: 48px; margin-bottom: 16px; }
+
+    .dropzone-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #c4b5fd;
+    }
+
+    .dropzone-hint {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    .error-msg {
+      color: #f87171;
+      text-align: center;
+      margin-top: 16px;
+      font-size: 14px;
+      background: rgba(248,113,113,0.1);
+      padding: 10px 16px;
+      border-radius: 8px;
+    }
+
+    .progress-box {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 40px 30px;
+      text-align: center;
+      display: none;
+    }
+
+    .progress-box p { font-size: 16px; color: #c4b5fd; margin-bottom: 20px; }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #a78bfa, #6366f1);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-pct {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 12px;
+    }
+
+    .result { display: none; }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 24px;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn:hover { transform: translateY(-2px); }
+
+    .btn-download {
+      background: linear-gradient(135deg, #7c3aed, #6366f1);
+      box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+    }
+
+    .btn-download:hover { box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+
+    .btn-copy {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      box-shadow: 0 4px 15px rgba(79,70,229,0.3);
+    }
+
+    .btn-copy.copied {
+      background: linear-gradient(135deg, #059669, #10b981);
+      box-shadow: 0 4px 15px rgba(16,185,129,0.3);
+    }
+
+    .btn-reset {
+      background: rgba(255,255,255,0.06);
+      color: #c4b5fd;
+      border: 1px solid rgba(139,92,246,0.3);
+    }
+
+    .btn-reset:hover { background: rgba(255,255,255,0.1); }
+
+    .preview-box {
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      border: 1px solid rgba(139,92,246,0.2);
+      overflow: hidden;
+    }
+
+    .preview-header {
+      padding: 10px 16px;
+      background: rgba(139,92,246,0.1);
+      border-bottom: 1px solid rgba(139,92,246,0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preview-header .label {
+      font-size: 13px;
+      color: #a78bfa;
+      font-weight: 600;
+    }
+
+    .preview-header .count {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .preview-content {
+      padding: 20px;
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #d1d5db;
+      overflow-x: auto;
+      max-height: 500px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>PDF → Markdown</h1>
+    <p class="subtitle">Convertissez vos PDF en Markdown fidèle, directement dans votre navigateur.</p>
+
+    <!-- Drop Zone -->
+    <div class="dropzone" id="dropzone">
+      <div class="dropzone-icon">📄</div>
+      <p class="dropzone-title">Glissez-déposez votre PDF ici</p>
+      <p class="dropzone-hint">ou cliquez pour sélectionner un fichier</p>
+      <input type="file" id="fileInput" accept=".pdf,application/pdf" style="display:none" />
+    </div>
+    <div class="error-msg hidden" id="errorMsg"></div>
+
+    <!-- Progress -->
+    <div class="progress-box" id="progressBox">
+      <p>Conversion de <strong id="progressName"></strong>…</p>
+      <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+      <p class="progress-pct" id="progressPct">0%</p>
+    </div>
+
+    <!-- Result -->
+    <div class="result" id="resultBox">
+      <div class="buttons">
+        <button class="btn btn-download" id="btnDownload">⬇️ Télécharger .md</button>
+        <button class="btn btn-copy" id="btnCopy">📋 Copier le MD</button>
+        <button class="btn btn-reset" id="btnReset">🔄 Nouveau fichier</button>
+      </div>
+      <div class="preview-box">
+        <div class="preview-header">
+          <span class="label">Aperçu Markdown</span>
+          <span class="count" id="charCount"></span>
+        </div>
+        <pre class="preview-content" id="previewContent"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    let markdown = "";
+    let currentFileName = "";
+
+    const $ = id => document.getElementById(id);
+    const dropzone = $("dropzone");
+    const fileInput = $("fileInput");
+    const errorMsg = $("errorMsg");
+    const progressBox = $("progressBox");
+    const progressBar = $("progressBar");
+    const progressPct = $("progressPct");
+    const progressName = $("progressName");
+    const resultBox = $("resultBox");
+    const previewContent = $("previewContent");
+    const charCount = $("charCount");
+    const btnDownload = $("btnDownload");
+    const btnCopy = $("btnCopy");
+    const btnReset = $("btnReset");
+
+    // --- Events ---
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("dragover", e => { e.preventDefault(); dropzone.classList.add("over"); });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("over"));
+    dropzone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropzone.classList.remove("over");
+      processFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", e => processFile(e.target.files[0]));
+
+    btnDownload.addEventListener("click", downloadMd);
+    btnCopy.addEventListener("click", copyMd);
+    btnReset.addEventListener("click", reset);
+
+    // --- File Processing ---
+    async function processFile(file) {
+      if (!file || file.type !== "application/pdf") {
+        showError("Veuillez sélectionner un fichier PDF valide.");
+        return;
+      }
+      hideError();
+      currentFileName = file.name;
+      showProgress(file.name);
+      setProgress(5);
+
+      try {
+        const buf = await file.arrayBuffer();
+        setProgress(10);
+        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        const total = pdf.numPages;
+        let pages = [];
+
+        for (let i = 1; i <= total; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          pages.push(content.items);
+          setProgress(10 + Math.round((i / total) * 70));
+        }
+
+        setProgress(85);
+        markdown = convertToMarkdown(pages);
+        setProgress(100);
+
+        setTimeout(() => showResult(), 300);
+      } catch (e) {
+        console.error(e);
+        showError("Erreur lors de la conversion : " + e.message);
+        showDropzone();
+      }
+    }
+
+    // --- Conversion ---
+    function analyzeItems(items) {
+      const lines = [];
+      let cur = [], lastY = null;
+      for (const item of items) {
+        if (item.str.trim() === "" && cur.length === 0) continue;
+        const y = Math.round(item.transform[5]);
+        if (lastY !== null && Math.abs(y - lastY) > 5 && cur.length > 0) {
+          lines.push({ items: [...cur], y: lastY });
+          cur = [];
+        }
+        cur.push(item);
+        lastY = y;
+      }
+      if (cur.length > 0) lines.push({ items: [...cur], y: lastY });
+      return lines;
+    }
+
+    function getFontSize(item) {
+      const m = item.transform;
+      return Math.round(Math.sqrt(m[0] * m[0] + m[1] * m[1]) * 10) / 10;
+    }
+
+    function detectHeading(fs, avg) {
+      if (fs >= avg * 1.8) return 1;
+      if (fs >= avg * 1.5) return 2;
+      if (fs >= avg * 1.25) return 3;
+      return 0;
+    }
+
+    function lineText(line) { return line.items.map(i => i.str).join("").trim(); }
+
+    function formatLine(line) {
+      let parts = [];
+      for (const item of line.items) {
+        let t = item.str;
+        if (!t) continue;
+        const fn = (item.fontName || "").toLowerCase();
+        const bold = fn.includes("bold") || fn.includes("black") || fn.includes("heavy");
+        const italic = fn.includes("italic") || fn.includes("oblique");
+        if (bold && italic) t = `***${t}***`;
+        else if (bold) t = `**${t}**`;
+        else if (italic) t = `*${t}*`;
+        parts.push(t);
+      }
+      return parts.join("").trim().replace(/\*{2,3}\s*\*{2,3}/g, " ");
+    }
+
+    function isBullet(t) { return /^[\u2022\u2023\u25E6\u2043\u25AA•●○■◦–—-]\s/.test(t) || /^[a-z]\)\s/i.test(t); }
+    function isNumbered(t) { return /^\d+[\.\)]\s/.test(t); }
+
+    function convertToMarkdown(pages) {
+      let allLines = [], fontSizes = [];
+      for (const page of pages) {
+        const lines = analyzeItems(page);
+        for (const l of lines) {
+          for (const item of l.items) if (item.str.trim()) fontSizes.push(getFontSize(item));
+          allLines.push(l);
+        }
+        allLines.push(null);
+      }
+
+      const avg = fontSizes.length > 0
+        ? fontSizes.sort((a, b) => a - b)[Math.floor(fontSizes.length / 2)]
+        : 12;
+
+      let md = [], tableRows = [];
+
+      function flushTable() {
+        if (tableRows.length === 0) return;
+        const cols = Math.max(...tableRows.map(r => r.length));
+        for (const row of tableRows) {
+          while (row.length < cols) row.push("");
+          md.push("| " + row.join(" | ") + " |");
+          if (tableRows.indexOf(row) === 0)
+            md.push("| " + row.map(() => "---").join(" | ") + " |");
+        }
+        tableRows = [];
+        md.push("");
+      }
+
+      for (const line of allLines) {
+        if (line === null) { flushTable(); md.push("\n---\n"); continue; }
+        const text = lineText(line);
+        if (!text) { flushTable(); md.push(""); continue; }
+
+        const hasTab = line.items.some(i => i.str.includes("\t"));
+        const hasSpaces = line.items.some(i => /\s{4,}/.test(i.str));
+        if (hasTab || hasSpaces) {
+          const cells = text.split(/\t|\s{4,}/).map(c => c.trim()).filter(Boolean);
+          if (cells.length >= 2) { tableRows.push(cells); continue; }
+        }
+
+        flushTable();
+        const fs = line.items.length > 0 ? getFontSize(line.items[0]) : avg;
+        const hl = detectHeading(fs, avg);
+
+        if (hl > 0) { md.push(`${"#".repeat(hl)} ${text}`); md.push(""); }
+        else if (isBullet(text)) md.push(`- ${text.replace(/^[\u2022\u2023\u25E6\u2043\u25AA•●○■◦–—-]\s*/, "").replace(/^[a-z]\)\s*/i, "")}`);
+        else if (isNumbered(text)) md.push(text);
+        else md.push(formatLine(line));
+      }
+
+      flushTable();
+      let result = md.join("\n").replace(/\n{4,}/g, "\n\n\n").replace(/(\n---\n)+$/g, "");
+      return result.trim();
+    }
+
+    // --- UI Helpers ---
+    function showError(msg) { errorMsg.textContent = msg; errorMsg.classList.remove("hidden"); }
+    function hideError() { errorMsg.classList.add("hidden"); }
+
+    function showProgress(name) {
+      dropzone.classList.add("hidden");
+      progressBox.style.display = "block";
+      resultBox.style.display = "none";
+      progressName.textContent = name;
+    }
+
+    function setProgress(v) {
+      progressBar.style.width = v + "%";
+      progressPct.textContent = v + "%";
+    }
+
+    function showResult() {
+      progressBox.style.display = "none";
+      resultBox.style.display = "block";
+      previewContent.textContent = markdown;
+      charCount.textContent = markdown.length + " caractères";
+    }
+
+    function showDropzone() {
+      dropzone.classList.remove("hidden");
+      progressBox.style.display = "none";
+      resultBox.style.display = "none";
+    }
+
+    function reset() {
+      markdown = "";
+      currentFileName = "";
+      fileInput.value = "";
+      hideError();
+      showDropzone();
+    }
+
+    function downloadMd() {
+      try {
+        const blob = new Blob([markdown], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = currentFileName.replace(/\.pdf$/i, "") + ".md";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+      } catch (e) {
+        window.open("data:text/plain;charset=utf-8," + encodeURIComponent(markdown), "_blank");
+      }
+    }
+
+    function copyMd() {
+      navigator.clipboard.writeText(markdown).then(() => showCopied()).catch(() => {
+        const ta = document.createElement("textarea");
+        ta.value = markdown;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showCopied();
+      });
+    }
+
+    function showCopied() {
+      btnCopy.textContent = "✅ Copié !";
+      btnCopy.classList.add("copied");
+      setTimeout(() => {
+        btnCopy.textContent = "📋 Copier le MD";
+        btnCopy.classList.remove("copied");
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
