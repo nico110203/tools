@@ -9,7 +9,7 @@
     {
     "titre": "PDF to MarkDown",
     "description": "Courte description.",
-    "fichier": "pdf-to-md.html",
+    "fichier": "pdf-to-md.tsx",
     "tag": "react",
     "date": "2026-04-09"
 }
